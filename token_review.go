@@ -28,7 +28,7 @@ type tokenReviewResult struct {
 
 // This exists so we can use a mock TokenReview when running tests
 type tokenReviewer interface {
-	Review(string) (*tokenReviewResult, error)
+	Review(string, string) (*tokenReviewResult, error)
 }
 
 type tokenReviewFactory func(*kubeConfig) tokenReviewer
@@ -44,7 +44,7 @@ func tokenReviewAPIFactory(config *kubeConfig) tokenReviewer {
 	}
 }
 
-func (t *tokenReviewAPI) Review(jwt string) (*tokenReviewResult, error) {
+func (t *tokenReviewAPI) Review(jwt string, audience string) (*tokenReviewResult, error) {
 
 	client := cleanhttp.DefaultClient()
 
@@ -62,9 +62,14 @@ func (t *tokenReviewAPI) Review(jwt string) (*tokenReviewResult, error) {
 	}
 
 	// Create the TokenReview Object and marshal it into json
+	var audiences []string
+	if audience != "" {
+		audiences = []string{audience}
+	}
 	trReq := &authv1.TokenReview{
 		Spec: authv1.TokenReviewSpec{
-			Token: jwt,
+			Token:     jwt,
+			Audiences: audiences,
 		},
 	}
 	trJSON, err := json.Marshal(trReq)
@@ -187,7 +192,7 @@ func mockTokenReviewFactory(name, namespace, UID string) tokenReviewFactory {
 	}
 }
 
-func (t *mockTokenReview) Review(jwt string) (*tokenReviewResult, error) {
+func (t *mockTokenReview) Review(jwt string, audience string) (*tokenReviewResult, error) {
 	return &tokenReviewResult{
 		Name:      t.saName,
 		Namespace: t.saNamespace,

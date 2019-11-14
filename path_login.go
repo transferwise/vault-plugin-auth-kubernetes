@@ -104,7 +104,7 @@ func (b *kubeAuthBackend) pathLogin() framework.OperationFunc {
 		}
 
 		// look up the JWT token in the kubernetes API
-		err = serviceAccount.lookup(jwtStr, b.reviewFactory(config))
+		err = serviceAccount.lookup(jwtStr, role.Audience, b.reviewFactory(config))
 		if err != nil {
 			return nil, err
 		}
@@ -350,8 +350,8 @@ type projectedServiceAccountPod struct {
 
 // lookup calls the TokenReview API in kubernetes to verify the token and secret
 // still exist.
-func (s *serviceAccount) lookup(jwtStr string, tr tokenReviewer) error {
-	r, err := tr.Review(jwtStr)
+func (s *serviceAccount) lookup(jwtStr string, audience string, tr tokenReviewer) error {
+	r, err := tr.Review(jwtStr, audience)
 	if err != nil {
 		return err
 	}
